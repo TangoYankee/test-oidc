@@ -44,3 +44,12 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+
+## OIDC
+
+https://cloud.google.com/identity-platform/docs/web/oidc#web-version-9
+
+https://github.com/panva/oauth4webapi/blob/42afb145589441e2ba8e07fc9f8fc2458cb10038/examples/public.ts
+
+https://developers.google.com/identity/openid-connect/openid-connect
