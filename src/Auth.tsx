@@ -92,9 +92,15 @@ export function Auth () {
                     throw new Error() // Handle www-authenticate challenges as needed
                 }
 
-
                 const userInfoResult = await oauth.processUserInfoResponse(as, client, storedSub, userInfoResponse);
                 console.debug(userInfoResult)
+                await oauth.revocationRequest(as, client, storedAccessToken);
+                const revokedUserInfoResponse = await oauth.userInfoRequest(as, client, storedAccessToken);
+                console.debug('revoked', revokedUserInfoResponse);
+
+                window.localStorage.removeItem("testOidcAccessToken");
+                window.localStorage.removeItem("testOidcSub");
+                window.location.assign('/');
             }
         })();
     }, [])
