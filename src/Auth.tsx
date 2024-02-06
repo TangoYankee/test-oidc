@@ -1,5 +1,6 @@
 import * as oauth from "oauth4webapi";
 import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 const issuer = new URL(process.env.REACT_APP_ISSUER_URL as string);
 const clientId = process.env.REACT_APP_CLIENT_ID as string;
@@ -121,6 +122,19 @@ export function Auth () {
         })();
     }, [loginPath, userInfo, shouldSignOut])
 
+    const readAccessToken = () => {
+        const storedResultRaw = window.localStorage.getItem("testOidcResult");
+        const storedResult = storedResultRaw === null ? storedResultRaw : JSON.parse(storedResultRaw);
+        if(storedResult !== null) {
+            const { access_token: accessToken } = storedResult;
+            console.debug("token", accessToken);
+            // const decode = jwtDecode(accessToken.token)
+            // console.debug("access token", decode);
+        } else {
+            console.debug("There is no result to read");
+        }
+    }
+
     const signOut = () => setShouldSignOut(true);
     return <div>
         <h1>
@@ -135,6 +149,7 @@ export function Auth () {
                 <>
                     <button onClick={signOut}>Sign Out</button>
                     <p>{userInfo.email}</p>
+                    <button onClick={readAccessToken}>Read access token</button>
                 </>
             }
         </div>
