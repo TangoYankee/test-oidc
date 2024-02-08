@@ -1,10 +1,10 @@
 import * as oauth from "oauth4webapi";
 import { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
 
 const issuer = new URL(process.env.REACT_APP_ISSUER_URL as string);
 const clientId = process.env.REACT_APP_CLIENT_ID as string;
-const redirectUri = `${process.env.REACT_APP_HOST}/redirect`
+const redirectUri = `${process.env.REACT_APP_HOST}/redirect`;
+const apiUrl = `${process.env.REACT_APP_API}`;
 
 export function Auth () {
     const [loginPath, setLoginPath] = useState<string | null>(null);
@@ -59,6 +59,7 @@ export function Auth () {
                     authUrl.searchParams.set('code_challenge', codeChallenge);
                     authUrl.searchParams.set('code_challenge_method', codeChallengeMethod);
                     authUrl.searchParams.set('redirect_uri', redirectUri);
+                    authUrl.searchParams.set('audience', apiUrl);
                     authUrl.searchParams.set('response_type', 'code');
                     authUrl.searchParams.set('scope', 'openid email');
                     setLoginPath(authUrl.href);
@@ -70,7 +71,7 @@ export function Auth () {
                     const currentUrl = new URL(window.location.href);
                     const params = oauth.validateAuthResponse(as, client, currentUrl, oauth.expectNoState)
                     if (oauth.isOAuth2Error(params)) {
-                        console.error("params error");
+                        console.error("params error", params);
                     } else {
                         const response = await oauth.authorizationCodeGrantRequest(
                             as,
@@ -104,6 +105,7 @@ export function Auth () {
 
                 if(storedResult !== null && storedClaims !== null && userInfo === null) {
                     console.info("has access to tokens but needs to place user info in state")
+                    // TODO: may cause error if tokens are expired. Need to wipe tokens when they are no longer valid
 
                     const userInfoResponse = await oauth.userInfoRequest(as, client, storedResult.access_token);
 
@@ -122,14 +124,16 @@ export function Auth () {
         })();
     }, [loginPath, userInfo, shouldSignOut])
 
-    const readAccessToken = () => {
+    const readAccessToken = async () => {
         const storedResultRaw = window.localStorage.getItem("testOidcResult");
         const storedResult = storedResultRaw === null ? storedResultRaw : JSON.parse(storedResultRaw);
         if(storedResult !== null) {
             const { access_token: accessToken } = storedResult;
-            console.debug("token", accessToken);
-            // const decode = jwtDecode(accessToken.token)
-            // console.debug("access token", decode);
+            await fetch(apiUrl, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
+                }
+            });
         } else {
             console.debug("There is no result to read");
         }
