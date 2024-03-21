@@ -9,12 +9,14 @@ const port = 5500;
 app.use(cors());
 
 app.get('/', async (_req: express.Request, res: express.Response) => {
+    const graphBaseUrl = "https://graph.microsoft.com";
     const clientId = process.env.SHAREPOINT_CLIENT_ID;
     const clientSecret = process.env.SHAREPOINT_CLIENT_SECRET;
     const tenantId = process.env.SHAREPOINT_TENANT_ID;
     const siteName = process.env.SHAREPOINT_SITE_NAME;
     const siteId = process.env.SHAREPOINT_SITE_ID;
     if(clientId === undefined || clientSecret === undefined || tenantId === undefined || siteName === undefined || siteId === undefined) throw new Error("Missing configuration")
+    const sharepointSiteUrl = `${graphBaseUrl}/v1.0/sites/${siteId}`;
     const msalConfig = {
        auth: {
         clientId,
@@ -24,15 +26,11 @@ app.get('/', async (_req: express.Request, res: express.Response) => {
     }
     const cca = new msal.ConfidentialClientApplication(msalConfig);
     const result = await cca.acquireTokenByClientCredential({
-        scopes: ["https://graph.microsoft.com/.default"]
+        scopes: [`${graphBaseUrl}/.default`]
     })
-    // console.debug("result", result);
-    // console.debug("clientId", clientId);
-    // console.debug("clientSecret", clientSecret);
-    // console.debug("tenantId", tenantId);
+
     if(result === null) throw new Error("token result is null");
     const { accessToken } = result;
-    const url = `https://graph.microsoft.com/v1.0/sites/${siteId}`
     const options = {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -41,28 +39,26 @@ app.get('/', async (_req: express.Request, res: express.Response) => {
     }
 
     try {
-        // const sitesUrl = `https://graph.microsoft.com/v1.0/sites?search=${siteName}&$select=id`
-        const sitesUrl = `https://graph.microsoft.com/v1.0/sites`
-        const sitesSearchResponse = await fetch(sitesUrl, options)
-        const sitesSearchDetails = await sitesSearchResponse.json() as {}
-        console.debug("sitesSearchDetails", sitesSearchDetails)
-    } catch {
-        throw new Error("unable to fetch site ids");
-    }
-    try {
-        console.debug("site url", url);
+        const url = sharepointSiteUrl;
         const response = await fetch(url, options);
-        console.debug("sites response", response);
         const siteDetails = await response.json() as {};
-        console.debug("siteDetails", siteDetails);
-        const message = {
-            status: "verified"
-        }
-        
-        res.json({accessToken, ...siteDetails})
+        console.debug("site details", siteDetails);
     } catch {
         const message = {
-            status: "error"
+            status: "error getting site details"
+        }
+        res.send(JSON.stringify(message));
+    }
+
+    try {
+        const url = `${sharepointSiteUrl}/lists`
+        const response = await fetch(url, options);
+        const listDetails = await response.json() as {};
+        console.debug("list details", listDetails);
+        res.send(listDetails);
+    } catch {
+        const message = {
+            status: "error getting list details"
         }
         res.send(JSON.stringify(message));
     }
