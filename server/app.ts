@@ -12,7 +12,9 @@ app.get('/', async (_req: express.Request, res: express.Response) => {
     const clientId = process.env.SHAREPOINT_CLIENT_ID;
     const clientSecret = process.env.SHAREPOINT_CLIENT_SECRET;
     const tenantId = process.env.SHAREPOINT_TENANT_ID;
-    if(clientId === undefined || clientSecret === undefined || tenantId === undefined) throw new Error("Missing configuration")
+    const siteName = process.env.SHAREPOINT_SITE_NAME;
+    const siteId = process.env.SHAREPOINT_SITE_ID;
+    if(clientId === undefined || clientSecret === undefined || tenantId === undefined || siteName === undefined || siteId === undefined) throw new Error("Missing configuration")
     const msalConfig = {
        auth: {
         clientId,
@@ -30,21 +32,34 @@ app.get('/', async (_req: express.Request, res: express.Response) => {
     // console.debug("tenantId", tenantId);
     if(result === null) throw new Error("token result is null");
     const { accessToken } = result;
-    const url = `https://graph.microsoft.com/v1.0/sites/${process.env.SHAREPOINT_TARGET_HOST}`
+    const url = `https://graph.microsoft.com/v1.0/sites/${siteId}`
     const options = {
         headers: {
             'Authorization': `Bearer ${accessToken}`,
             Accept: 'application/json'
         }
     }
-    const siteDetails = await fetch(url, options);
-    console.debug("siteDetails", siteDetails);
+
     try {
+        // const sitesUrl = `https://graph.microsoft.com/v1.0/sites?search=${siteName}&$select=id`
+        const sitesUrl = `https://graph.microsoft.com/v1.0/sites`
+        const sitesSearchResponse = await fetch(sitesUrl, options)
+        const sitesSearchDetails = await sitesSearchResponse.json() as {}
+        console.debug("sitesSearchDetails", sitesSearchDetails)
+    } catch {
+        throw new Error("unable to fetch site ids");
+    }
+    try {
+        console.debug("site url", url);
+        const response = await fetch(url, options);
+        console.debug("sites response", response);
+        const siteDetails = await response.json() as {};
+        console.debug("siteDetails", siteDetails);
         const message = {
             status: "verified"
         }
         
-        res.send(JSON.stringify(message));
+        res.json({accessToken, ...siteDetails})
     } catch {
         const message = {
             status: "error"
