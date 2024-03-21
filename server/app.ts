@@ -50,15 +50,27 @@ app.get('/', async (_req: express.Request, res: express.Response) => {
         res.send(JSON.stringify(message));
     }
 
+    // try {
+    //     const url = `${sharepointSiteUrl}/lists`
+    //     const response = await fetch(url, options);
+    //     const listDetails = await response.json() as {};
+    //     console.debug("list details", listDetails);
+    // } catch {
+    //     const message = {
+    //         status: "error getting list details"
+    //     }
+    //     res.send(JSON.stringify(message));
+    // }
+
     try {
-        const url = `${sharepointSiteUrl}/lists`
+        const url = `${sharepointSiteUrl}/lists?$filter=displayName eq 'Project'&$select=id`
         const response = await fetch(url, options);
-        const listDetails = await response.json() as {};
-        console.debug("list details", listDetails);
-        res.send(listDetails);
+        const projectIds = await response.json() as { value: Array<{id: string}>}
+        console.debug("list project", projectIds.value[0].id)
+        res.send({projectId: projectIds.value[0].id});
     } catch {
         const message = {
-            status: "error getting list details"
+            status: "error getting list with project"
         }
         res.send(JSON.stringify(message));
     }
